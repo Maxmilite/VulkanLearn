@@ -1,0 +1,30 @@
+# CMake build directory
+/build/
+
+# CMake generated files
+/CMakeFiles/
+/CMakeCache.txt
+/CMakeScripts/
+/CMakeScripts/
+/CMakeTmp/
+/*.cmake
+
+# Compiled binaries
+# *.exe
+# *.out
+# *.o
+# *.a
+# *.lib
+
+# Generated project files
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vscode/
+*.xcodeproj/
+*.idea/
+*.cbp
+*.workspace
+
+# Ignore cmake install files
+install_manifest.txt
