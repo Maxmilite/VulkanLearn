@@ -15,7 +15,7 @@ namespace GLFW {
     GLFWmonitor* pMonitor;
     const char* windowTitle = "Vulkan Program";
 
-    void initWindow(VkExtent2D size, bool fullScreen = false, bool isResizable = true, bool limitFrameRate = true) {
+    void initWindow(VkExtent2D size, bool fullScreen = false, bool isResizable = true, bool limitFrameRate = false) {
         
         if (!glfwInit()) {
             throw std::runtime_error(Message::ERROR_CREATING_WINDOW);
@@ -79,9 +79,14 @@ namespace GLFW {
                 Vulkan::GraphicsBase::getBase().createDevice())
                 throw std::runtime_error("Error while creating devices.");
 
+            if (Vulkan::GraphicsBase::getBase().createSwapchain(limitFrameRate))
+                throw std::runtime_error("Error while creating Swapchain.");
+
+
     }
 
     void terminateWindow() {
+        Vulkan::GraphicsBase::getBase().waitIdle();
         glfwTerminate();
     }
 
