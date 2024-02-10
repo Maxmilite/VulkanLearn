@@ -5,6 +5,10 @@
 #include <GLFW/glfw3.h>
 #pragma comment(lib, "glfw3.lib")
 
+
+// Patch
+#include <format>
+
 namespace GLFW {
 
     GLFWwindow* pWindow;
@@ -20,6 +24,17 @@ namespace GLFW {
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, isResizable);
 
+        uint32_t extensionCount = 0;
+        const char** extensionNames;
+        extensionNames = glfwGetRequiredInstanceExtensions(&extensionCount);
+        if (!extensionNames) {
+            glfwTerminate();
+            throw std::runtime_error(Message::ERROR_HARDWARE_NOT_SUPPORT);
+        }
+        for (size_t i = 0; i < extensionCount; i++)
+            Vulkan::GraphicsBase::getBase().pushInstanceExtension(extensionNames[i]);
+        Vulkan::GraphicsBase::getBase().pushDeviceExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
         pMonitor = glfwGetPrimaryMonitor();
 
         const GLFWvidmode* pMode = glfwGetVideoMode(pMonitor);
@@ -33,6 +48,36 @@ namespace GLFW {
             throw std::runtime_error(Message::ERROR_CREATING_WINDOW);
         }
 
+        #ifdef _WIN32
+            Vulkan::GraphicsBase::getBase().pushInstanceExtension("VK_KHR_surface");
+            Vulkan::GraphicsBase::getBase().pushInstanceExtension("VK_KHR_win32_surface");
+        #else
+            uint32_t extensionCount = 0;
+            const char** extensionNames;
+            extensionNames = glfwGetRequiredInstanceExtensions(&extensionCount);
+            if (!extensionNames) {
+                glfwTerminate();
+                return false;
+                throw std::runtime_error("Vulkan is not available on this machine!");
+            }
+            for (size_t i = 0; i < extensionCount; i++)
+                Vulkan::GraphicsBase::getBase().pushInstanceExtension(extensionNames[i]);
+        #endif
+
+            if (Vulkan::GraphicsBase::getBase().createInstance()) throw std::runtime_error("Error while creating instance.");
+
+            VkSurfaceKHR surface = VK_NULL_HANDLE;
+            if (VkResult result = glfwCreateWindowSurface(Vulkan::GraphicsBase::getBase().getInstance(), pWindow, nullptr, &surface)) {
+                glfwTerminate();
+                throw std::runtime_error(std::format("Failed to create a window surface!\nError code: {}\n", int32_t(result)));
+            }
+            Vulkan::GraphicsBase::getBase().setSurface(surface);
+
+            if (
+                Vulkan::GraphicsBase::getBase().getPhysicalDevices() ||
+                Vulkan::GraphicsBase::getBase().determinePhysicalDevice(0, true, false) ||
+                Vulkan::GraphicsBase::getBase().createDevice())
+                throw std::runtime_error("Error while creating devices.");
 
     }
 
