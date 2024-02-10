@@ -88,7 +88,7 @@ namespace Vulkan {
             };
 
             if (result_t result = vkCreateInstance(&instanceCreateInfo, nullptr, &instance)) {
-                std::cerr << Message::ERROR_CREATING_INSTANCE << std::endl;
+                outStream << Message::ERROR_CREATING_INSTANCE << std::endl;
                 return result;
             }
 
@@ -107,13 +107,13 @@ namespace Vulkan {
             uint32_t layerCount = 0;
             std::vector<VkLayerProperties> availableLayers;
             if (result_t result = vkEnumerateInstanceLayerProperties(&layerCount, nullptr)) {
-                std::cerr << Message::ERROR_COUNTING_INSTANCE << std::endl;
+                outStream << Message::ERROR_COUNTING_INSTANCE << std::endl;
                 return result;
             }
             if (layerCount) {
                 availableLayers.resize(layerCount);
                 if (result_t result = vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data())) {
-                    std::cerr << Message::ERROR_COUNTING_INSTANCE << std::endl;
+                    outStream << Message::ERROR_COUNTING_INSTANCE << std::endl;
                     return result;
                 }
                 for (auto& i : layersToCheck) {
@@ -139,14 +139,14 @@ namespace Vulkan {
             std::vector<VkExtensionProperties> availableExtensions;
             if (result_t result = vkEnumerateInstanceExtensionProperties(layerName, &extensionCount, nullptr)) {
                 layerName ? 
-                std::cerr << Message::ERROR_COUNTING_EXT << "\n Layer Name: " << layerName << std::endl : 
-                std::cerr << Message::ERROR_COUNTING_EXT << "\n Layer Name: " << layerName << std::endl;
+                outStream << Message::ERROR_COUNTING_EXT << "\n Layer Name: " << layerName << std::endl : 
+                outStream << Message::ERROR_COUNTING_EXT << "\n Layer Name: " << layerName << std::endl;
                 return result;
             }
             if (extensionCount) {
                 availableExtensions.resize(extensionCount);
                 if (result_t result = vkEnumerateInstanceExtensionProperties(layerName, &extensionCount, availableExtensions.data())) {
-                    std::cerr << Message::ERROR_COUNTING_EXT << std::endl;
+                    outStream << Message::ERROR_COUNTING_EXT << std::endl;
                     return result;
                 }
                 for (auto& i : extensionsToCheck) {
@@ -180,7 +180,7 @@ namespace Vulkan {
                 const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
                 void* pUserData
             ) -> VkBool32 {
-                std::cerr << std::format("{}\n\n", pCallbackData->pMessage);
+                outStream << std::format("{}\n\n", pCallbackData->pMessage);
                 return VK_FALSE;
             };
             VkDebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCreateInfo = {
@@ -202,10 +202,10 @@ namespace Vulkan {
                 
             if (createDebugUtilsMessenger) {
                 result_t result = createDebugUtilsMessenger(instance, &debugUtilsMessengerCreateInfo, nullptr, &debugUtilsMessenger);
-                if (result) std::cerr << Message::ERROR_CREATING_DEBUG_MESSENGER << std::endl;
+                if (result) outStream << Message::ERROR_CREATING_DEBUG_MESSENGER << std::endl;
                 return result;
             }
-            std::cerr << Message::ERROR_POINTER_MESSENGER << std::endl;
+            outStream << Message::ERROR_POINTER_MESSENGER << std::endl;
             return VK_RESULT_MAX_ENUM;
         }
 
@@ -257,7 +257,7 @@ namespace Vulkan {
                     supportCompute = enableComputeQueue && queueFamilyPropertieses[i].queueFlags & VK_QUEUE_COMPUTE_BIT;
                 if (surface)
                     if (result_t result = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &supportPresentation)) {
-                        std::cerr << "Failed to determine if the queue family supports presentation!" << std::endl;
+                        outStream << "Failed to determine if the queue family supports presentation!" << std::endl;
                         return result;
                     }
                 if (supportGraphics && supportCompute) {
@@ -337,7 +337,7 @@ namespace Vulkan {
         result_t getPhysicalDevices() {
             uint32_t deviceCount;
             if (result_t result = vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr)) {
-                std::cerr << std::format("Failed to get the count of physical devices!\nError code: {}\n", int32_t(result));
+                outStream << std::format("Failed to get the count of physical devices!\nError code: {}\n", int32_t(result));
                 return result;
             }
             if (!deviceCount)
@@ -345,7 +345,7 @@ namespace Vulkan {
             availablePhysicalDevices.resize(deviceCount);
             result_t result = vkEnumeratePhysicalDevices(instance, &deviceCount, availablePhysicalDevices.data());
             if (result)
-                std::cerr << std::format("Failed to enumerate physical devices!\nError code: {}\n", int32_t(result));
+                outStream << std::format("Failed to enumerate physical devices!\nError code: {}\n", int32_t(result));
             return result;
         }
 
@@ -430,7 +430,7 @@ namespace Vulkan {
             };
 
             if (result_t result = vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &device)) {
-                std::cerr << std::format("Failed to create a vulkan logical device!\nError code: {}", int32_t(result)) << std::endl;
+                outStream << std::format("Failed to create a vulkan logical device!\nError code: {}", int32_t(result)) << std::endl;
                 return result;
             }
 
@@ -468,18 +468,18 @@ namespace Vulkan {
         result_t createSwapchainInternal() {
 
             if (result_t result = vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr, &swapchain)) {
-                std::cerr << std::format("Failed to create a swapchain.\nError code: {}", int32_t(result)) << std::endl;
+                outStream << std::format("Failed to create a swapchain.\nError code: {}", int32_t(result)) << std::endl;
                 return result;
             }
 
             uint32_t swapchainImageCount;
             if (result_t result = vkGetSwapchainImagesKHR(device, swapchain, &swapchainImageCount, nullptr)) {
-                std::cerr << std::format("Failed to get the count of swapchain images.\nError code: {}", int32_t(result)) << std::endl;
+                outStream << std::format("Failed to get the count of swapchain images.\nError code: {}", int32_t(result)) << std::endl;
                 return result;
             }
             swapchainImages.resize(swapchainImageCount);
             if (result_t result = vkGetSwapchainImagesKHR(device, swapchain, &swapchainImageCount, swapchainImages.data())) {
-                std::cerr << std::format("Failed to get swapchain images.\nError code: {}", int32_t(result)) << std::endl;
+                outStream << std::format("Failed to get swapchain images.\nError code: {}", int32_t(result)) << std::endl;
                 return result;
             }
 
@@ -493,7 +493,7 @@ namespace Vulkan {
             for (size_t i = 0; i < swapchainImageCount; i++) {
                 imageViewCreateInfo.image = swapchainImages[i];
                 if (result_t result = vkCreateImageView(device, &imageViewCreateInfo, nullptr, &swapchainImageViews[i])) {
-                    std::cerr << std::format("Failed to create a swapchain image view.\nError code: {}\n", int32_t(result)) << std::endl;
+                    outStream << std::format("Failed to create a swapchain image view.\nError code: {}\n", int32_t(result)) << std::endl;
                     return result;
                 }
             }
@@ -537,7 +537,7 @@ namespace Vulkan {
         result_t getSurfaceFormats() {
             uint32_t surfaceFormatCount;
             if (result_t result = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &surfaceFormatCount, nullptr)) {
-                std::cerr << std::format("Failed to get the count of surface formats!\nError code: {}", int32_t(result)) << std::endl;
+                outStream << std::format("Failed to get the count of surface formats!\nError code: {}", int32_t(result)) << std::endl;
                 return result;
             }
             if (!surfaceFormatCount)
@@ -545,7 +545,7 @@ namespace Vulkan {
             availableSurfaceFormats.resize(surfaceFormatCount);
             result_t result = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &surfaceFormatCount, availableSurfaceFormats.data());
             if (result)
-                std::cerr << std::format("Failed to get surface formats!\nError code: {}", int32_t(result)) << std::endl;
+                outStream << std::format("Failed to get surface formats!\nError code: {}", int32_t(result)) << std::endl;
             
             
             return result;
@@ -579,7 +579,7 @@ namespace Vulkan {
         result_t createSwapchain(bool limitFrameRate = false, const void* pNext = nullptr, VkSwapchainCreateFlagsKHR flags = 0) {
             VkSurfaceCapabilitiesKHR surfaceCapabilities = {};
             if (result_t result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCapabilities)) {
-                std::cerr << std::format("Failed to get physical device surface capabilities!\nError code: {}", int32_t(result)) << std::endl;
+                outStream << std::format("Failed to get physical device surface capabilities!\nError code: {}", int32_t(result)) << std::endl;
                 return result;
             }
 
@@ -610,7 +610,7 @@ namespace Vulkan {
             if (surfaceCapabilities.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT)
                 swapchainCreateInfo.imageUsage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
             else
-                std::cerr << std::format("VK_IMAGE_USAGE_TRANSFER_DST_BIT isn't supported.") << std::endl;
+                outStream << std::format("VK_IMAGE_USAGE_TRANSFER_DST_BIT isn't supported.") << std::endl;
 
             if (availableSurfaceFormats.empty())
                 if (result_t result = getSurfaceFormats()) return result;
@@ -621,13 +621,13 @@ namespace Vulkan {
                     setSurfaceFormat({ VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR })) {
                     swapchainCreateInfo.imageFormat = availableSurfaceFormats[0].format;
                     swapchainCreateInfo.imageColorSpace = availableSurfaceFormats[0].colorSpace;
-                    std::cerr << std::format("Failed to select a four-component UNORM surface format.") << std::endl;
+                    outStream << std::format("Failed to select a four-component UNORM surface format.") << std::endl;
                 }
             }
 
             uint32_t surfacePresentModeCount;
             if (result_t result = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &surfacePresentModeCount, nullptr)) {
-                std::cerr << std::format("Failed to get the count of surface present modes.\nError code: {}", int32_t(result)) << std::endl;
+                outStream << std::format("Failed to get the count of surface present modes.\nError code: {}", int32_t(result)) << std::endl;
                 return result;
             }
             if (!surfacePresentModeCount)
@@ -635,7 +635,7 @@ namespace Vulkan {
 
             std::vector<VkPresentModeKHR> surfacePresentModes(surfacePresentModeCount);
             if (result_t result = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &surfacePresentModeCount, surfacePresentModes.data())) {
-                std::cerr << std::format("Failed to get surface present modes.\nError code: {}", int32_t(result)) << std::endl;
+                outStream << std::format("Failed to get surface present modes.\nError code: {}", int32_t(result)) << std::endl;
                 return result;
             }
 
@@ -656,7 +656,7 @@ namespace Vulkan {
             swapchainCreateInfo.clipped = VK_TRUE;
 
             if (result_t result = vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr, &swapchain)) {
-                std::cerr << std::format("Failed to create a swapchain.\nError code: {}", int32_t(result)) << std::endl;
+                outStream << std::format("Failed to create a swapchain.\nError code: {}", int32_t(result)) << std::endl;
                 return result;
             }
 
@@ -669,7 +669,7 @@ namespace Vulkan {
         result_t recreateSwapchain() {
             VkSurfaceCapabilitiesKHR surfaceCapabilities = {};
             if (result_t result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCapabilities)) {
-                std::cerr << std::format("Failed to get physical device surface capabilities.\nError code: {}", int32_t(result)) << std::endl;
+                outStream << std::format("Failed to get physical device surface capabilities.\nError code: {}", int32_t(result)) << std::endl;
                 return result;
             }
             if (surfaceCapabilities.currentExtent.width == 0 ||
@@ -683,7 +683,7 @@ namespace Vulkan {
                 queueGraphics != queuePresentation)
                 result = vkQueueWaitIdle(queuePresentation);
             if (result) {
-                std::cerr << std::format("Failed to wait for the queue to be idle.\nError code: {}", int32_t(result)) << std::endl;
+                outStream << std::format("Failed to wait for the queue to be idle.\nError code: {}", int32_t(result)) << std::endl;
                 return result;
             }
 
@@ -734,10 +734,244 @@ namespace Vulkan {
             swapchainCreateInfo = {};
             debugUtilsMessenger = VK_NULL_HANDLE;
         }
-    };
+    
+    private:
+        uint32_t currentImageIndex = 0;
 
+    public:
+        uint32_t getCurrentImageIndex() const { return currentImageIndex; }
+        result_t swapImage(VkSemaphore semaphoreImageIsAvailable) {
+            if (swapchainCreateInfo.oldSwapchain &&
+                swapchainCreateInfo.oldSwapchain != swapchain) {
+                vkDestroySwapchainKHR(device, swapchainCreateInfo.oldSwapchain, nullptr);
+                swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
+            }
+            switch (VkResult result = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, semaphoreImageIsAvailable, VK_NULL_HANDLE, &currentImageIndex)) {
+            case VK_SUBOPTIMAL_KHR:
+            case VK_ERROR_OUT_OF_DATE_KHR:
+                return recreateSwapchain();
+            case VK_SUCCESS:
+                return VK_SUCCESS;
+            default:
+                outStream << std::format("Failed to acquire the next image!\nError code: {}", int32_t(result)) << std::endl;
+                return result;
+            }
+        }
+        
+    };
 
     inline GraphicsBase GraphicsBase::singleton;
 
+    template<typename T>
+    class ArrayRef {
+        T* const pArray = nullptr;
+        size_t count = 0;
+    public:
+        // 从空参数构造，count为0
+        ArrayRef() = default;
+        // 从单个对象构造，count为1
+        ArrayRef(T& data) :pArray(&data), count(1) {}
+        // 从顶级数组构造
+        template<size_t elementCount>
+        ArrayRef(T(&data)[elementCount]) : pArray(data), count(elementCount) {}
+        // 从指针和元素个数构造
+        ArrayRef(T* pData, size_t elementCount) :pArray(pData), count(elementCount) {}
+        // 复制构造，若T带const修饰，兼容从对应的无const修饰版本的arrayRef构造
+        // 24.01.07 修正因复制粘贴产生的typo：从pArray(&other)改为pArray(other.Pointer())
+        ArrayRef(const ArrayRef<std::remove_const_t<T>>& other) :pArray(other.pointer()), count(other.getCount()) {}
+        // Getter
+        T* pointer() const { return pArray; }
+        size_t getCount() const { return count; }
+        // Const Function
+        T& operator[](size_t index) const { return pArray[index]; }
+        T* begin() const { return pArray; }
+        T* end() const { return pArray + count; }
+        // Non-const Function
+        // 禁止复制/移动赋值
+        ArrayRef& operator=(const ArrayRef&) = delete;
+    };
+
+    class Fence {
+
+        VkFence handle = VK_NULL_HANDLE;
+
+    public:
+        Fence(VkFenceCreateInfo& createInfo) { create(createInfo); }
+        Fence(VkFenceCreateFlags flags = 0) { create(flags); }
+        Fence(Fence&& other) noexcept { moveHandle; }
+        ~Fence() { destroyHandleBy(vkDestroyFence); }
+
+        defineHandleTypeOperator;
+        defineAddressFunction;
+
+        // Const Function
+        result_t wait() const {
+            VkResult result = vkWaitForFences(GraphicsBase::getBase().getDevice(), 1, &handle, false, UINT64_MAX);
+            if (result)
+                outStream << std::format("Failed to wait for the fence!\nError code: {}", int32_t(result)) << std::endl;
+            return result;
+        }
+
+        result_t reset() const {
+            VkResult result = vkResetFences(GraphicsBase::getBase().getDevice(), 1, &handle);
+            if (result)
+                outStream << std::format("Failed to reset the fence!\nError code: {}", int32_t(result)) << std::endl;
+            return result;
+        }
+
+        result_t waitAndReset() const {
+            VkResult result = wait();
+            result || (result = reset());
+            return result;
+        }
+
+        result_t status() const {
+            VkResult result = vkGetFenceStatus(GraphicsBase::getBase().getDevice(), handle);
+            if (result < 0)
+                outStream << std::format("Failed to get the status of the fence!\nError code: {}", int32_t(result)) << std::endl;
+            return result;
+        }
+
+        // Non-const Function
+        result_t create(VkFenceCreateInfo& createInfo) {
+            createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+            VkResult result = vkCreateFence(GraphicsBase::getBase().getDevice(), &createInfo, nullptr, &handle);
+            if (result)
+                outStream << std::format("Failed to create a fence!\nError code: {}", int32_t(result)) << std::endl;
+            return result;
+        }
+
+        result_t create(VkFenceCreateFlags flags = 0) {
+            VkFenceCreateInfo createInfo = {
+                .flags = flags
+            };
+            return create(createInfo);
+        }
+    };
+
+    class Semaphore {
+        
+        VkSemaphore handle = VK_NULL_HANDLE;
+
+    public:
+        Semaphore(VkSemaphoreCreateInfo& createInfo) { create(createInfo); }
+        Semaphore(/*VkSemaphoreCreateFlags flags*/) { create(); }
+        Semaphore(Semaphore&& other) noexcept { moveHandle; }
+        ~Semaphore() { destroyHandleBy(vkDestroySemaphore); }
+        
+        defineHandleTypeOperator;
+        defineAddressFunction;
+
+        // Non-const Function
+        result_t create(VkSemaphoreCreateInfo& createInfo) {
+            createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+            VkResult result = vkCreateSemaphore(GraphicsBase::getBase().getDevice(), &createInfo, nullptr, &handle);
+            if (result)
+                outStream << std::format("Failed to create a semaphore!\nError code: {}", int32_t(result)) << std::endl;
+            return result;
+        }
+        result_t create(/*VkSemaphoreCreateFlags flags*/) {
+            VkSemaphoreCreateInfo createInfo = {};
+            return create(createInfo);
+        }
+    };
+
+    class CommandBuffer {
+        friend class CommandPool;
+        VkCommandBuffer handle = VK_NULL_HANDLE;
+    public:
+        CommandBuffer() = default;
+        CommandBuffer(CommandBuffer&& other) noexcept { moveHandle; }
+        
+        defineHandleTypeOperator;
+        defineAddressFunction;
+        
+        // Const Function
+        result_t begin(VkCommandBufferUsageFlags usageFlags, VkCommandBufferInheritanceInfo& inheritanceInfo) const {
+            inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+            VkCommandBufferBeginInfo beginInfo = {
+                .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+                .flags = usageFlags,
+                .pInheritanceInfo = &inheritanceInfo
+            };
+            VkResult result = vkBeginCommandBuffer(handle, &beginInfo);
+            if (result)
+                outStream << std::format("Failed to begin a command buffer!\nError code: {}", int32_t(result)) << std::endl;
+            return result;
+        }
+
+        result_t begin(VkCommandBufferUsageFlags usageFlags = 0) const {
+            VkCommandBufferBeginInfo beginInfo = {
+                .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+                .flags = usageFlags,
+            };
+            VkResult result = vkBeginCommandBuffer(handle, &beginInfo);
+            if (result)
+                outStream << std::format("Failed to begin a command buffer!\nError code: {}", int32_t(result)) << std::endl;
+            return result;
+        }
+
+        result_t end() const {
+            VkResult result = vkEndCommandBuffer(handle);
+            if (result)
+                outStream << std::format("Failed to end a command buffer!\nError code: {}", int32_t(result)) << std::endl;
+            return result;
+        }
+    };
+
+    class CommandPool {
+        VkCommandPool handle = VK_NULL_HANDLE;
+    public:
+        CommandPool() = default;
+        CommandPool(VkCommandPoolCreateInfo& createInfo) { create(createInfo); }
+        CommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags = 0) { create(queueFamilyIndex, flags); }
+        CommandPool(CommandPool&& other) noexcept { moveHandle; }
+        ~CommandPool() { destroyHandleBy(vkDestroyCommandPool); }
+
+        defineHandleTypeOperator;
+        defineAddressFunction;
+
+        // Const Function
+        result_t allocateBuffers(ArrayRef<VkCommandBuffer> buffers, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY) const {
+            VkCommandBufferAllocateInfo allocateInfo = {
+                .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+                .commandPool = handle,
+                .level = level,
+                .commandBufferCount = uint32_t(buffers.getCount())
+            };
+            VkResult result = vkAllocateCommandBuffers(GraphicsBase::getBase().getDevice(), &allocateInfo, buffers.pointer());
+            if (result)
+                outStream << std::format("Failed to allocate command buffers!\nError code: {}", int32_t(result)) << std::endl;
+            return result;
+        }
+        result_t allocateBuffers(ArrayRef<CommandBuffer> buffers, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY) const {
+            return allocateBuffers(
+                { &buffers[0].handle, buffers.getCount() },
+                level);
+        }
+        void freeBuffers(ArrayRef<VkCommandBuffer> buffers) const {
+            vkFreeCommandBuffers(GraphicsBase::getBase().getDevice(), handle, buffers.getCount(), buffers.pointer());
+            memset(buffers.pointer(), 0, buffers.getCount() * sizeof(VkCommandBuffer));
+        }
+        void freeBuffers(ArrayRef<CommandBuffer> buffers) const {
+            freeBuffers({ &buffers[0].handle, buffers.getCount() });
+        }
+       
+        // Non-const Function
+        result_t create(VkCommandPoolCreateInfo& createInfo) {
+            createInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+            VkResult result = vkCreateCommandPool(GraphicsBase::getBase().getDevice(), &createInfo, nullptr, &handle);
+            if (result)
+                outStream << std::format("Failed to create a command pool!\nError code: {}", int32_t(result)) << std::endl;
+            return result;
+        }
+        result_t create(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags = 0) {
+            VkCommandPoolCreateInfo createInfo = {
+                .flags = flags,
+                .queueFamilyIndex = queueFamilyIndex
+            };
+            return create(createInfo);
+        }
+    };
 
 }

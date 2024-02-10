@@ -82,3 +82,5 @@ using result_t = VkResult;
 #define defineAddressFunction const decltype(handle)* address() const { return &handle; }
 
 #define executeOnce(...) { static bool executed = false; if (executed) return __VA_ARGS__; executed = true; }
+
+inline auto& outStream = std::cerr;
