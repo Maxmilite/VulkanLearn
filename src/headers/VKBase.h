@@ -757,7 +757,121 @@ namespace Vulkan {
                 return result;
             }
         }
-        
+
+    public:
+        result_t submitCommandBufferGraphics(VkSubmitInfo& submitInfo, VkFence fence = VK_NULL_HANDLE) const {
+            submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+            VkResult result = vkQueueSubmit(queueGraphics, 1, &submitInfo, fence);
+            if (result)
+                outStream << std::format("Failed to submit the command buffer!\nError code: {}", int32_t(result)) << std::endl;
+            return result;
+        }
+
+        result_t submitCommandBufferGraphics(VkCommandBuffer commandBuffer,
+            VkSemaphore semaphoreImageIsAvailable = VK_NULL_HANDLE, VkSemaphore semaphoreRenderingIsOver = VK_NULL_HANDLE, VkFence fence = VK_NULL_HANDLE) const {
+            static constexpr VkPipelineStageFlags waitDstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            VkSubmitInfo submitInfo = {
+                .commandBufferCount = 1,
+                .pCommandBuffers = &commandBuffer
+            };
+            if (semaphoreImageIsAvailable)
+                submitInfo.waitSemaphoreCount = 1,
+                submitInfo.pWaitSemaphores = &semaphoreImageIsAvailable,
+                submitInfo.pWaitDstStageMask = &waitDstStage;
+            if (semaphoreRenderingIsOver)
+                submitInfo.signalSemaphoreCount = 1,
+                submitInfo.pSignalSemaphores = &semaphoreRenderingIsOver;
+            return submitCommandBufferGraphics(submitInfo, fence);
+        }
+
+        result_t submitCommandBufferGraphics(VkCommandBuffer commandBuffer, VkFence fence = VK_NULL_HANDLE) const {
+            VkSubmitInfo submitInfo = {
+                .commandBufferCount = 1,
+                .pCommandBuffers = &commandBuffer
+            };
+            return submitCommandBufferGraphics(submitInfo, fence);
+        }
+
+        result_t submitCommandBufferCompute(VkSubmitInfo& submitInfo, VkFence fence = VK_NULL_HANDLE) const {
+            submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+            VkResult result = vkQueueSubmit(queueCompute, 1, &submitInfo, fence);
+            if (result)
+                outStream << std::format("Failed to submit the command buffer!\nError code: {}", int32_t(result)) << std::endl;
+            return result;
+        }
+
+        result_t submitCommandBufferCompute(VkCommandBuffer commandBuffer, VkFence fence = VK_NULL_HANDLE) const {
+            VkSubmitInfo submitInfo = {
+                .commandBufferCount = 1,
+                .pCommandBuffers = &commandBuffer
+            };
+            return submitCommandBufferCompute(submitInfo, fence);
+        }
+
+        result_t presentImage(VkPresentInfoKHR& presentInfo) {
+            presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+            switch (result_t result = vkQueuePresentKHR(queuePresentation, &presentInfo)) {
+            case VK_SUBOPTIMAL_KHR:
+            case VK_ERROR_OUT_OF_DATE_KHR:
+                return recreateSwapchain();
+            case VK_SUCCESS:
+                return VK_SUCCESS;
+            default:
+                outStream << std::format("Failed to queue the image for presentation!\nError code: {}", int32_t(result)) << std::endl;
+                return result;
+            }
+        }
+
+        result_t presentImage(VkSemaphore semaphoreRenderingIsOver = VK_NULL_HANDLE) {
+            VkPresentInfoKHR presentInfo = {
+                .swapchainCount = 1,
+                .pSwapchains = &swapchain,
+                .pImageIndices = &currentImageIndex
+            };
+            if (semaphoreRenderingIsOver)
+                presentInfo.waitSemaphoreCount = 1,
+                presentInfo.pWaitSemaphores = &semaphoreRenderingIsOver;
+            return presentImage(presentInfo);
+        }
+
+        public:
+        result_t submitCommandBufferPresentation(VkCommandBuffer commandBuffer,
+            VkSemaphore semaphoreRenderingIsOver = VK_NULL_HANDLE, VkSemaphore semaphoreOwnershipIsTransfered = VK_NULL_HANDLE, VkFence fence = VK_NULL_HANDLE) const {
+            static constexpr VkPipelineStageFlags waitDstStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+            VkSubmitInfo submitInfo = {
+                .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                .commandBufferCount = 1,
+                .pCommandBuffers = &commandBuffer
+            };
+            if (semaphoreRenderingIsOver)
+                submitInfo.waitSemaphoreCount = 1,
+                submitInfo.pWaitSemaphores = &semaphoreRenderingIsOver,
+                submitInfo.pWaitDstStageMask = &waitDstStage;
+            if (semaphoreOwnershipIsTransfered)
+                submitInfo.signalSemaphoreCount = 1,
+                submitInfo.pSignalSemaphores = &semaphoreOwnershipIsTransfered;
+            VkResult result = vkQueueSubmit(queuePresentation, 1, &submitInfo, fence);
+            if (result)
+                outStream << std::format("Failed to submit the presentation command buffer!\nError code: {}", int32_t(result)) << std::endl;
+            return result;
+        }
+
+        public:
+        void cmdTransferImageOwnership(VkCommandBuffer commandBuffer) const {
+            VkImageMemoryBarrier imageMemoryBarrier_g2p = {
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                .dstAccessMask = 0,
+                .oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                .newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                .srcQueueFamilyIndex = queueFamilyIndexGraphics,
+                .dstQueueFamilyIndex = queueFamilyIndexPresentation,
+                .image = swapchainImages[currentImageIndex],
+                .subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }
+            };
+            vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0,
+                0, nullptr, 0, nullptr, 1, &imageMemoryBarrier_g2p);
+        }
     };
 
     inline GraphicsBase GraphicsBase::singleton;
