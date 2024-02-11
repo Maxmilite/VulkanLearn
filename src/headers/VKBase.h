@@ -1088,7 +1088,6 @@ namespace Vulkan {
         }
     };
 
-
     class RenderPass {
         VkRenderPass handle = VK_NULL_HANDLE;
     public:
@@ -1158,6 +1157,221 @@ namespace Vulkan {
             if (result)
                 outStream << std::format("Failed to create a framebuffer!\nError code: {}", int32_t(result)) << std::endl;
             return result;
+        }
+    };
+
+    class PipelineLayout {
+        VkPipelineLayout handle = VK_NULL_HANDLE;
+    public:
+        PipelineLayout() = default;
+        PipelineLayout(VkPipelineLayoutCreateInfo& createInfo) {
+            create(createInfo);
+        }
+        PipelineLayout(PipelineLayout&& other) noexcept { moveHandle; }
+        ~PipelineLayout() { destroyHandleBy(vkDestroyPipelineLayout); }
+        
+        defineHandleTypeOperator;
+        defineAddressFunction;
+        
+        result_t create(VkPipelineLayoutCreateInfo& createInfo) {
+            createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+            VkResult result = vkCreatePipelineLayout(GraphicsBase::getBase().getDevice(), &createInfo, nullptr, &handle);
+            if (result)
+                outStream << std::format("Failed to create a pipeline layout!\nError code: {}", int32_t(result)) << std::endl;
+            return result;
+        }
+    };
+
+    struct GraphicsPipelineCreateInfoPack {
+        VkGraphicsPipelineCreateInfo createInfo =
+        { VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
+        std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
+        // Vertex Input
+        VkPipelineVertexInputStateCreateInfo vertexInputStateCi =
+        { VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
+        std::vector<VkVertexInputBindingDescription> vertexInputBindings;
+        std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
+        // Input Assembly
+        VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCi =
+        { VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
+        // Tessellation
+        VkPipelineTessellationStateCreateInfo tessellationStateCi =
+        { VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO };
+        // Viewport
+        VkPipelineViewportStateCreateInfo viewportStateCi =
+        { VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO };
+        std::vector<VkViewport> viewports;
+        std::vector<VkRect2D> scissors;
+        uint32_t dynamicViewportCount = 1;
+        uint32_t dynamicScissorCount = 1;
+        // Rasterization
+        VkPipelineRasterizationStateCreateInfo rasterizationStateCi =
+        { VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
+        // Multisample
+        VkPipelineMultisampleStateCreateInfo multisampleStateCi =
+        { VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO };
+        // Depth & Stencil
+        VkPipelineDepthStencilStateCreateInfo depthStencilStateCi =
+        { VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
+        // Color Blend
+        VkPipelineColorBlendStateCreateInfo colorBlendStateCi =
+        { VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO };
+        std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates;
+        // Dynamic
+        VkPipelineDynamicStateCreateInfo dynamicStateCi =
+        { VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO };
+        std::vector<VkDynamicState> dynamicStates;
+        //--------------------
+        GraphicsPipelineCreateInfoPack() {
+            setCreateInfos();
+            createInfo.basePipelineIndex = -1;
+        }
+        GraphicsPipelineCreateInfoPack(const GraphicsPipelineCreateInfoPack& other) noexcept {
+            createInfo = other.createInfo;
+            setCreateInfos();
+
+            vertexInputStateCi = other.vertexInputStateCi;
+            inputAssemblyStateCi = other.inputAssemblyStateCi;
+            tessellationStateCi = other.tessellationStateCi;
+            viewportStateCi = other.viewportStateCi;
+            rasterizationStateCi = other.rasterizationStateCi;
+            multisampleStateCi = other.multisampleStateCi;
+            depthStencilStateCi = other.depthStencilStateCi;
+            colorBlendStateCi = other.colorBlendStateCi;
+            dynamicStateCi = other.dynamicStateCi;
+
+            shaderStages = other.shaderStages;
+            vertexInputBindings = other.vertexInputBindings;
+            vertexInputAttributes = other.vertexInputAttributes;
+            viewports = other.viewports;
+            scissors = other.scissors;
+            colorBlendAttachmentStates = other.colorBlendAttachmentStates;
+            dynamicStates = other.dynamicStates;
+            updateAllArrayAddresses();
+        }
+        operator VkGraphicsPipelineCreateInfo& () { return createInfo; }
+        void updateAllArrays() {
+            createInfo.stageCount = shaderStages.size();
+            vertexInputStateCi.vertexBindingDescriptionCount = vertexInputBindings.size();
+            vertexInputStateCi.vertexAttributeDescriptionCount = vertexInputAttributes.size();
+            viewportStateCi.viewportCount = viewports.size() ? uint32_t(viewports.size()) : dynamicViewportCount;
+            viewportStateCi.scissorCount = scissors.size() ? uint32_t(scissors.size()) : dynamicScissorCount;
+            colorBlendStateCi.attachmentCount = colorBlendAttachmentStates.size();
+            dynamicStateCi.dynamicStateCount = dynamicStates.size();
+            updateAllArrayAddresses();
+        }
+    private:
+        void setCreateInfos() {
+            createInfo.pVertexInputState = &vertexInputStateCi;
+            createInfo.pInputAssemblyState = &inputAssemblyStateCi;
+            createInfo.pTessellationState = &tessellationStateCi;
+            createInfo.pViewportState = &viewportStateCi;
+            createInfo.pRasterizationState = &rasterizationStateCi;
+            createInfo.pMultisampleState = &multisampleStateCi;
+            createInfo.pDepthStencilState = &depthStencilStateCi;
+            createInfo.pColorBlendState = &colorBlendStateCi;
+            createInfo.pDynamicState = &dynamicStateCi;
+        }
+        void updateAllArrayAddresses() {
+            createInfo.pStages = shaderStages.data();
+            vertexInputStateCi.pVertexBindingDescriptions = vertexInputBindings.data();
+            vertexInputStateCi.pVertexAttributeDescriptions = vertexInputAttributes.data();
+            viewportStateCi.pViewports = viewports.data();
+            viewportStateCi.pScissors = scissors.data();
+            colorBlendStateCi.pAttachments = colorBlendAttachmentStates.data();
+            dynamicStateCi.pDynamicStates = dynamicStates.data();
+        }
+    };
+    
+    class Pipeline {
+        VkPipeline handle = VK_NULL_HANDLE;
+    public:
+        Pipeline() = default;
+        Pipeline(VkGraphicsPipelineCreateInfo& createInfo) {
+            create(createInfo);
+        }
+        Pipeline(VkComputePipelineCreateInfo& createInfo) {
+            create(createInfo);
+        }
+        Pipeline(Pipeline&& other) noexcept { moveHandle; }
+        ~Pipeline() { destroyHandleBy(vkDestroyPipeline); }
+        
+        defineHandleTypeOperator;
+        defineAddressFunction;
+        
+        result_t create(VkGraphicsPipelineCreateInfo& createInfo) {
+            createInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+            VkResult result = vkCreateGraphicsPipelines(GraphicsBase::getBase().getDevice(), VK_NULL_HANDLE, 1, &createInfo, nullptr, &handle);
+            if (result)
+                outStream << std::format("Failed to create a graphics pipeline!\nError code: {}", int32_t(result)) << std::endl;
+            return result;
+        }
+        result_t create(VkComputePipelineCreateInfo& createInfo) {
+            createInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+            VkResult result = vkCreateComputePipelines(GraphicsBase::getBase().getDevice(), VK_NULL_HANDLE, 1, &createInfo, nullptr, &handle);
+            if (result)
+                outStream << std::format("Failed to create a compute pipeline!\nError code: {}", int32_t(result)) << std::endl;
+            return result;
+        }
+    };
+
+    class ShaderModule {
+        VkShaderModule handle = VK_NULL_HANDLE;
+    public:
+        ShaderModule() = default;
+        ShaderModule(VkShaderModuleCreateInfo& createInfo) {
+            create(createInfo);
+        }
+        ShaderModule(const char* filepath /*VkShaderModuleCreateFlags flags*/) {
+            create(filepath);
+        }
+        ShaderModule(size_t codeSize, const uint32_t* pCode /*VkShaderModuleCreateFlags flags*/) {
+            create(codeSize, pCode);
+        }
+        ShaderModule(ShaderModule&& other) noexcept { moveHandle; }
+        ~ShaderModule() { destroyHandleBy(vkDestroyShaderModule); }
+
+        defineHandleTypeOperator;
+        defineAddressFunction;
+
+        VkPipelineShaderStageCreateInfo stageCreateInfo(VkShaderStageFlagBits stage, const char* entry = "main") const {
+            return {
+                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,//sType
+                nullptr,                                            //pNext
+                0,                                                  //flags
+                stage,                                              //stage
+                handle,                                             //module
+                entry,                                              //pName
+                nullptr                                             //pSpecializationInfo
+            };
+        }
+        // Non-const Function
+        result_t create(VkShaderModuleCreateInfo& createInfo) {
+            createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+            VkResult result = vkCreateShaderModule(GraphicsBase::getBase().getDevice(), &createInfo, nullptr, &handle);
+            if (result)
+                outStream << std::format("Failed to create a shader module!\nError code: {}", int32_t(result)) << std::endl;
+            return result;
+        }
+        result_t create(const char* filepath /*VkShaderModuleCreateFlags flags*/) {
+            std::ifstream file(filepath, std::ios::ate | std::ios::binary);
+            if (!file) {
+                outStream << std::format("Failed to open the file: {}", filepath) << std::endl;
+                return VK_RESULT_MAX_ENUM;
+            }
+            size_t fileSize = size_t(file.tellg());
+            std::vector<uint32_t> binaries(fileSize / 4);
+            file.seekg(0);
+            file.read(reinterpret_cast<char*>(binaries.data()), fileSize);
+            file.close();
+            return create(fileSize, binaries.data());
+        }
+        result_t create(size_t codeSize, const uint32_t* pCode /*VkShaderModuleCreateFlags flags*/) {
+            VkShaderModuleCreateInfo createInfo = {
+                .codeSize = codeSize,
+                .pCode = pCode
+            };
+            return create(createInfo);
         }
     };
 
