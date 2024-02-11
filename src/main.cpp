@@ -1,10 +1,13 @@
 #include "headers/GLFWGeneral.hpp"
+#include "headers/EasyVulkan.hpp"
 
 using namespace Vulkan;
 
 int main(int argc, char* argv[]) {
 
     GLFW::initWindow(defaultWindowSize);
+
+    const auto& [renderPass, framebuffers] = EasyVulkan::createRpwfScreen();
 
     Fence fence(VK_FENCE_CREATE_SIGNALED_BIT);
     Semaphore semaphoreImageIsAvailable;
@@ -17,6 +20,8 @@ int main(int argc, char* argv[]) {
     CommandPool commandPoolPresentation(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, GraphicsBase::getBase().getQueueFamilyIndexPresentation());
     commandPoolGraphics.allocateBuffers(commandBufferGraphics);
     commandPoolPresentation.allocateBuffers(commandBufferPresentation);
+
+    VkClearValue clearColor = { .color = { 1.f, 0.f, 0.f, 1.f } };
 
     while (!GLFW::shouldClose()) {
 

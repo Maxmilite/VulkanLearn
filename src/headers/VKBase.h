@@ -1088,4 +1088,77 @@ namespace Vulkan {
         }
     };
 
+
+    class RenderPass {
+        VkRenderPass handle = VK_NULL_HANDLE;
+    public:
+        RenderPass() = default;
+        RenderPass(VkRenderPassCreateInfo& createInfo) { create(createInfo); }
+        RenderPass(RenderPass&& other) noexcept { moveHandle; }
+        ~RenderPass() { destroyHandleBy(vkDestroyRenderPass); }
+        
+        defineHandleTypeOperator;
+        defineAddressFunction;
+
+        void cmdBegin(VkCommandBuffer commandBuffer, VkRenderPassBeginInfo& beginInfo, VkSubpassContents subpassContents = VK_SUBPASS_CONTENTS_INLINE) const {
+            beginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            beginInfo.renderPass = handle;
+            vkCmdBeginRenderPass(commandBuffer, &beginInfo, subpassContents);
+        }
+
+        void cmdBegin(
+            VkCommandBuffer commandBuffer, VkFramebuffer framebuffer, 
+            VkRect2D renderArea, ArrayRef<const VkClearValue> clearValues = {}, 
+            VkSubpassContents subpassContents = VK_SUBPASS_CONTENTS_INLINE
+        ) const {
+            VkRenderPassBeginInfo beginInfo = {
+                .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+                .renderPass = handle,
+                .framebuffer = framebuffer,
+                .renderArea = renderArea,
+                .clearValueCount = uint32_t(clearValues.getCount()),
+                .pClearValues = clearValues.pointer()
+            };
+            vkCmdBeginRenderPass(commandBuffer, &beginInfo, subpassContents);
+        }
+
+        void cmdNext(VkCommandBuffer commandBuffer, VkSubpassContents subpassContents = VK_SUBPASS_CONTENTS_INLINE) const {
+            vkCmdNextSubpass(commandBuffer, subpassContents);
+        }
+
+        void cmdEnd(VkCommandBuffer commandBuffer) const {
+            vkCmdEndRenderPass(commandBuffer);
+        }
+
+        result_t create(VkRenderPassCreateInfo& createInfo) {
+            createInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+            VkResult result = vkCreateRenderPass(GraphicsBase::getBase().getDevice(), &createInfo, nullptr, &handle);
+            if (result)
+                outStream << std::format("Failed to create a render pass!\nError code: {}", int32_t(result)) << std::endl;
+            return result;
+        }
+    };
+
+    class Framebuffer {
+        VkFramebuffer handle = VK_NULL_HANDLE;
+    public:
+        Framebuffer() = default;
+        Framebuffer(VkFramebufferCreateInfo& createInfo) {
+            create(createInfo);
+        }
+        Framebuffer(Framebuffer&& other) noexcept { moveHandle; }
+        ~Framebuffer() { destroyHandleBy(vkDestroyFramebuffer); }
+        
+        defineHandleTypeOperator;
+        defineAddressFunction;
+        
+        result_t create(VkFramebufferCreateInfo& createInfo) {
+            createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+            VkResult result = vkCreateFramebuffer(GraphicsBase::getBase().getDevice(), &createInfo, nullptr, &handle);
+            if (result)
+                outStream << std::format("Failed to create a framebuffer!\nError code: {}", int32_t(result)) << std::endl;
+            return result;
+        }
+    };
+
 }
