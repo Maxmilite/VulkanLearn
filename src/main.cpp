@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
     // CommandPool commandPool(GraphicsBase::getBase().getQueueFamilyIndexGraphics(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
     // commandPool.allocateBuffers(commandBuffer);
 
-    VkClearValue clearColor = { .color = { 1.f, 0.f, 0.f, 1.f } };
+    VkClearValue clearColor = { .color = { 0.f, 0.f, 0.f, 1.f } };
 
 
     while (!GLFW::shouldClose()) {
